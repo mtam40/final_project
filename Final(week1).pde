@@ -19,7 +19,6 @@ void draw() {
   background(200);
   grid();
   drawPlayer();
-  // update snake if frameCount is a multiple of spd which is 20 at the begining
   if(frameCount % spd == 0) {
     updatePlayer();
   }
