@@ -1,0 +1,63 @@
+class entity {
+  public int size;// is actually the hitbox
+  public int durability;
+  public String type;
+  public double spd;
+  public int xcord;
+  public int ycord;
+  public entity() {// null entity
+    size = 0;
+    durability = 0;
+    type = "Erroneous";
+    spd = 0;
+  }
+  public entity(int hitboxSize, int hp, String entityType, double movspd, int xpos, int ypos) {
+    size = hitboxSize;
+    durability = hp;
+    type = entityType;
+    spd = movspd;
+    xcord = xpos;
+    ycord = ypos;
+  }
+}
+
+class Player extends entity {
+  public Player(int hitboxSize, int hp, int xcord, int ycord) {
+    super(hitboxSize, hp, "player",
+      5, xcord, ycord);//dummy speed value, will change for balancing
+  }
+  void gotHit(int currentHP){
+   durability = currentHP - 1;
+  }
+}
+/*
+class Enemy extends entity { // to set enemy stats
+  public Enemy() {
+    Enemy enemy = new enemyType("No existe");
+  }
+  public Enemy(String enemytype) {
+    Enemy enemy = new enemyType(enemytype);
+  }
+}
+
+class enemyType extends Enemy { // to store enemy types and stats
+
+  public enemyType(String enemytype) {
+    type = enemytype;
+    for (int i = 0; i < enemyList.length; i++) {
+      if (enemytype.equals(enemyList[i].type)) {
+        size = enemyList[i].size;
+        durability = enemyList[i].durability;
+        spd = enemyList[i].spd;
+      }
+    }
+  }
+  private String[] enemyList = {nothing, basicEnemy, miniboss, boss, bonus};
+  entity nothing = new enemyType(0, 0, "No existe", 0); //fail-safe for empty constructor
+  entity basicEnemy = new entity(40, 40, "basicEnemy", 5);// dummy stat values
+  entity miniboss = new entity(40, 40, "miniboss", 5);// dummy stat values
+  entity boss = new entity(40, 40, "boss", 5);// dummy stat values
+  entity bonus = new entity(40, 40, "bonus", 5);// dummy stat values
+}
+
+}*/
