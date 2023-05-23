@@ -1,5 +1,5 @@
 int size, w, h;
-int spd = 20;
+int spd = 40;
 PVector pos, dir = new PVector(0,0);
 PVector playerBulletsDir = new PVector(0, -5);
 ArrayList<PVector> playerBullets = new ArrayList<PVector>();
@@ -12,7 +12,7 @@ void setup() {
   h = height/size;
   pos = new PVector(w / 2 * size, h / 1.5 * size); //initial position
   drawPlayer();
-  Player player = new Player(size, 5, (int) pos.x, (int) pos.y);
+  player = new Player(size, 5, (int) pos.x, (int) pos.y);
   //noStroke();
   //fill(0);
 }
@@ -26,7 +26,8 @@ void draw() {
     updatePlayer();
   }
   updatePlayerBullets();
-  collisionCheck();
+  //collisionCheck();
+  gameOver();
 }
 
 
