@@ -1,0 +1,107 @@
+int size, w, h;
+int spd = 20;
+PVector pos, dir = new PVector(0,0);
+PVector playerBulletsDir = new PVector(0, -5);
+ArrayList<PVector> playerBullets = new ArrayList<PVector>();
+entity player = new entity();
+
+void setup() {
+  size(1080, 720);
+  size = 40;
+  w = width/size;
+  h = height/size;
+  pos = new PVector(w / 2 * size, h / 1.5 * size); //initial position
+  drawPlayer();
+  Player player = new Player(size, 5, (int) pos.x, (int) pos.y);
+  //noStroke();
+  //fill(0);
+}
+
+void draw() {
+  background(200);
+  grid();
+  drawPlayer();
+  // update snake if frameCount is a multiple of spd which is 20 at the begining
+  if(frameCount % spd == 0) {
+    updatePlayer();
+  }
+  updatePlayerBullets();
+  collisionCheck();
+}
+
+
+void drawPlayer() {
+  fill(#74FF83);
+  square(pos.x, pos.y, size);
+}
+
+void updatePlayer(){
+  pos.add(dir);
+  fill(#74FF83);
+  square(pos.x, pos.y, size);
+  createPlayerBullet();
+}
+
+void createPlayerBullet(){
+  PVector playerBulletl = new PVector(pos.x, pos.y);
+  PVector playerBulletr = new PVector(pos.x + 25, pos.y);
+  playerBullets.add(playerBulletl);
+  playerBullets.add(playerBulletr);
+  fill(#C45D5D);
+  square(playerBulletl.x, playerBulletl.y, 15);
+  square(playerBulletr.x, playerBulletr.y, 15);
+}
+
+void updatePlayerBullets(){
+  for(int i = 0; i < playerBullets.size(); i++){
+    playerBullets.get(i).add(playerBulletsDir);
+    fill(#C45D5D);
+    square(playerBullets.get(i).x, playerBullets.get(i).y, 15);
+  }
+} 
+void grid() {
+    for(int outer = 0; outer < h; outer++){
+      for(int inner = 0; inner < w; inner++){
+        fill(#FFFFFF);
+        square( inner * size, outer * size, size);
+      }
+    }
+}
+
+void collisionCheck(){
+ for(int i = 0; i < playerBullets.size(); i++){
+   for(int j = 0; j < 0/*enemyList*/; j++){
+     if((playerBullets.get(i).x == 0/*enemyList.get(j).x */) &&
+     (playerBullets.get(i).x == 0/*enemyList.get(j).x */)){
+       //enemyList.get(j).gotHit();
+     }
+   }
+ }
+ for(int i = 0; i < 0/*enemyBullets.size() */; i++){
+     if((/*enemyBullets.get(i).x */0 == pos.x ) &&
+     (/*enemyBullets.get(i).x */0 == pos.y)){
+       playerIsHit();
+       gameOver();
+     }
+   }
+ }
+ 
+void playerIsHit(){
+   player = new Player(size, player.durability - 1, (int) pos.x, (int) pos.y);
+}
+
+void gameOver(){
+ if (player.durability < 1){
+   fill(#030303);
+   rect(0, 0, 1080, 720);//dummy "Game Over"
+ }
+}
+void keyPressed() {
+  if(key == CODED) {
+    if(keyCode == UP) { dir = new PVector(0, -size); }
+    if(keyCode == DOWN) { dir = new PVector(0, size); }
+    if(keyCode == LEFT) { dir = new PVector(-size, 0); }
+    if(keyCode == RIGHT) { dir = new PVector(size, 0); }
+    if(keyCode == SHIFT) { dir = new PVector(0, 0); }
+  } 
+}
