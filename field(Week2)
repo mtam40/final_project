@@ -1,9 +1,10 @@
 int size, w, h;
 int spd = 10;
 int spawnspd = 100;
-int basicFirespd = 50;
+int fireSpd = 50;
+//int waveChange = 200000; // future feature, once functionalities are working
 PVector pos, dir = new PVector(0,0);
-PVector playerBulletsDir = new PVector(0, -5);
+PVector playerBulletsDir = new PVector(0, -10);
 ArrayList<PVector> playerBullets = new ArrayList<PVector>();
 entity player = new entity();
 ArrayList<PVector> enemyposList = new ArrayList<PVector>();
@@ -13,7 +14,7 @@ PVector enemyBulletsDir = new PVector(0, 2.5);
 Enemy basic = new Enemy();
 
 void setup() {
-  size(1080, 1420);
+  size(1080, 700);
   size = 40;
   w = width/size;
   h = height/size;
@@ -33,17 +34,18 @@ void draw() {
   if(frameCount % spd == 0) {
     updatePlayer();
     updateEnemies();
+    collisionCheck();
   }
-  if(frameCount % basicFirespd == 0){
+  if(frameCount % fireSpd == 0){
     createEnemyBullet(); 
   }
   if(frameCount % spawnspd == 0) {
     createBasics();
+    //playerIsHit();//test gameOver
   }
   drawEnemies();
   updatePlayerBullets();
   updateEnemyBullets();
-  collisionCheck();
   gameOver();
 }
 
@@ -72,9 +74,12 @@ void createPlayerBullet(){
 
 void updatePlayerBullets(){
   for(int i = 0; i < playerBullets.size(); i++){
-    playerBullets.get(i).add(playerBulletsDir);
-    fill(#C45D5D);
-    square(playerBullets.get(i).x, playerBullets.get(i).y, 15);
+    if(playerBullets.get(i).y > 0){
+      playerBullets.get(i).add(playerBulletsDir);
+      fill(#C45D5D);
+      square(playerBullets.get(i).x, playerBullets.get(i).y, 15);
+    }
+    else{playerBullets.remove(i);}
   }
 } 
 
@@ -96,9 +101,9 @@ void collisionCheck(){// enemyDamaged not working
      }
    }
  }
- for(int i = 0; i < 0/*enemyBullets.size() */; i++){
-     if((/*enemyBullets.get(i).x */0 == pos.x ) &&
-     (/*enemyBullets.get(i).x */0 == pos.y)){
+ for(int i = 0; i < enemyBullets.size() ; i++){
+     if((enemyBullets.get(i).x == pos.x ) &&
+     (enemyBullets.get(i).x == pos.y)){
        playerIsHit();
        gameOver();
      }
@@ -127,7 +132,7 @@ void keyPressed() {
 
 //pure testing
 void createBasics(){
-  Enemy basic = new Enemy(40, 40, "basicEnemy", 5, (int) random(width / 2) / size * size, (int) random(height / 2) / size * size);
+  Enemy basic = new Enemy(40, 40, "basicEnemy", 5, (int) random(width) / size * size, (int) random(height / 3) / size * size);
   PVector basicEnemy = new PVector(basic.xcord, basic.ycord);
   fill(#3F4067);
   square(basicEnemy.x, basicEnemy.y, 40);
@@ -141,7 +146,6 @@ void drawEnemies(){
     square(enemyposList.get(i).x, enemyposList.get(i).y, size);
   } 
 }
-
 
 void updateEnemies(){
   for(int i = 0; i < enemyposList.size(); i++){
@@ -164,9 +168,12 @@ void createEnemyBullet(){
 
 void updateEnemyBullets(){
   for(int i = 0; i < enemyBullets.size(); i++){
+    if(enemyBullets.get(i).y < height){
     enemyBullets.get(i).add(enemyBulletsDir);
     fill(#FA1414);
     square(enemyBullets.get(i).x, enemyBullets.get(i).y, 40);
+    }
+    else{enemyBullets.remove(i);}
   }
 } 
 
