@@ -1,12 +1,17 @@
 int size, w, h;
-int spd = 40;
+int spd = 10;
+int spawnspd = 100;
 PVector pos, dir = new PVector(0,0);
 PVector playerBulletsDir = new PVector(0, -5);
 ArrayList<PVector> playerBullets = new ArrayList<PVector>();
 entity player = new entity();
+ArrayList<PVector> enemyposList = new ArrayList<PVector>();
+ArrayList<Enemy> enemyList = new ArrayList<Enemy>();
+ArrayList<PVector> enemyBullets = new ArrayList<PVector>();
+Enemy basic = new Enemy();
 
 void setup() {
-  size(1080, 720);
+  size(1080, 1420);
   size = 40;
   w = width/size;
   h = height/size;
@@ -15,6 +20,8 @@ void setup() {
   player = new Player(size, 5, (int) pos.x, (int) pos.y);
   //noStroke();
   //fill(0);
+  createBasics();
+  enemyList.add(basic);
 }
 
 void draw() {
@@ -23,9 +30,14 @@ void draw() {
   drawPlayer();
   if(frameCount % spd == 0) {
     updatePlayer();
+    updateEnemies();
   }
+  if(frameCount % spawnspd == 0) {
+    createBasics();
+  }
+  drawEnemies();
   updatePlayerBullets();
-  //collisionCheck();
+  collisionCheck();
   gameOver();
 }
 
@@ -68,12 +80,12 @@ void grid() {
     }
 }
 
-void collisionCheck(){
+void collisionCheck(){//not working
  for(int i = 0; i < playerBullets.size(); i++){
-   for(int j = 0; j < 0/*enemyList*/; j++){
-     if((playerBullets.get(i).x == 0/*enemyList.get(j).x */) &&
-     (playerBullets.get(i).x == 0/*enemyList.get(j).x */)){
-       //enemyList.get(j).gotHit();
+   for(int j = 0; j < enemyposList.size(); j++){
+     if((playerBullets.get(i).x == enemyposList.get(j).x ) &&
+     (playerBullets.get(i).y == enemyposList.get(j).y )){
+      // enemyList.get(i).set(enemyDamaged(enemyList.get(j)));
      }
    }
  }
@@ -105,3 +117,36 @@ void keyPressed() {
     if(keyCode == SHIFT) { dir = new PVector(0, 0); }
   } 
 }
+
+//pure testing
+void createBasics(){
+  Enemy basic = new Enemy(40, 40, "basicEnemy", 20, (int) random(width / 2) / size * size, (int) random(height / 2) / size * size);
+  PVector basicEnemy = new PVector(basic.xcord, basic.ycord);
+  fill(#3F4067);
+  square(basicEnemy.x, basicEnemy.y, 40);
+  enemyList.add(basic);
+  enemyposList.add(basicEnemy);
+}
+
+void drawEnemies(){
+ for(int i = 0; i < enemyposList.size(); i++){
+    fill(#3F4067);
+    square(enemyposList.get(i).x, enemyposList.get(i).y, size);
+  } 
+}
+
+
+void updateEnemies(){
+  for(int i = 0; i < enemyposList.size(); i++){
+    enemyposList.get(i).add(0.0, (float) enemyList.get(i).spd);
+    /*enemyList.get(i).set(
+    new Enemy(enemyList.get(i).size, enemyList.get(i).durability, enemyList.get(i).type, 
+    enemyList.get(i).spd, enemyposList.get(i).x, enemyposList.get(i).y)
+    );*/
+  }
+} 
+/*
+Enemy enemyDamaged(Enemy object){
+   return new Enemy(object.size, object.durability - 1, object.type, object.spd, object.xcord, object.ycord);
+}
+*/
