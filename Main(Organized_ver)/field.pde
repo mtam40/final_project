@@ -35,6 +35,7 @@ int timeSlowDuration = 800;
 boolean bossActive = false;
 int bossSpawnTime;
 int bossSpawnDur = 5000;
+int bossSpawnInterval = 50000;
 Enemy beegBoss = new Enemy();
 PVector bossLoc = new PVector(0, 0);
 Enemy theBigCrab = new Enemy(size * 9, 3, "theBigCrab", 0, width / 2, height);
@@ -147,6 +148,9 @@ void draw() {
   if((frameCount % waveChange == 0) && (frameCount != 0)) {
     enemySpd *= 2;
     moveRate *= 2;
+  }
+  if((frameCount % bossSpawnInterval == 0) && (frameCount != 0)) {
+    bossActive = true;
   }
   if((bossActive == true ) && (frameCount > bossSpawnTime + bossSpawnDur)){
     bossActive = false;
