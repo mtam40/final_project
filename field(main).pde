@@ -55,7 +55,7 @@ void setup() {
   miniMissileFireSpd = 100;
   pos = new PVector(width / 2 / size * size, height / 2 / size * size); //initial position
   drawPlayer();
-  player = new Player(size * 3, 1, (int) pos.x, (int) pos.y);//you adjust player hp here
+  player = new Player(size * 3, 50, (int) pos.x, (int) pos.y);//you adjust player hp here
   createBasics();
   enemyList.add(basic);
   createMiniBosses();
