@@ -174,7 +174,7 @@ void updateMissiles(){
    fill(#FA1414);
    circle(missiles.get(i).x, missiles.get(i).y, size);
    stepCount.set(i, (stepCount.get(i) + 1));
-   if(stepCount.get(i) > 500){// limits the amount of missiles on-screen and attacking the player
+   if(stepCount.get(i) > 300){// limits the amount of missiles on-screen and attacking the player
      stepCount.remove(i);
      missiles.remove(i);
      i--;
