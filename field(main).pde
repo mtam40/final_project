@@ -5,9 +5,13 @@ PVector pos, dir = new PVector(0,0);
 PVector playerBulletsDir = new PVector(0, -10);
 ArrayList<PVector> playerBullets = new ArrayList<PVector>();
 entity player = new entity();
+int survived;
 ArrayList<PVector> enemyposList = new ArrayList<PVector>();
 ArrayList<Enemy> enemyList = new ArrayList<Enemy>();
+ArrayList<PVector> bloomposList = new ArrayList<PVector>();
+ArrayList<Enemy> bloomList = new ArrayList<Enemy>();
 ArrayList<PVector> enemyBullets = new ArrayList<PVector>();
+ArrayList<PVector> bloomBullets = new ArrayList<PVector>();
 ArrayList<PVector> enemyBulletsdirs = new ArrayList<PVector>();
 Enemy basic = new Enemy();
 
@@ -29,6 +33,8 @@ boolean timeSlow = false;
 int timeSlowDuration = 800;
 
 boolean bossActive = false;
+int bossSpawnTime;
+int bossSpawnDur = 5000;
 Enemy beegBoss = new Enemy();
 PVector bossLoc = new PVector(0, 0);
 Enemy theBigCrab = new Enemy(size * 9, 3, "theBigCrab", 0, width / 2, height);
@@ -49,7 +55,7 @@ void setup() {
   miniMissileFireSpd = 100;
   pos = new PVector(width / 2 / size * size, height / 2 / size * size); //initial position
   drawPlayer();
-  player = new Player(size * 3, 50000/*5*/, (int) pos.x, (int) pos.y);
+  player = new Player(size * 3, 1, (int) pos.x, (int) pos.y);//you adjust player hp here
   createBasics();
   enemyList.add(basic);
   createMiniBosses();
@@ -63,7 +69,7 @@ void draw() {
   background(200);
   if(bossActive == false){
   grid();
-  }else{bossGrid(); drawBoss();}
+  }else{bossGrid(); drawBoss(); timerCheckCrab();}
   drawPlayer();
   if(powerUpSpawn == true){
     drawPowerUp();
@@ -82,6 +88,7 @@ void draw() {
   }
   if(frameCount % fireSpd == 0){
     createEnemyBullet(); 
+    createBulletBloom(); 
   }
   if(frameCount % miniMissileFireSpd == 0){
     createMissiles(size);
@@ -96,6 +103,9 @@ void draw() {
   }
   if(frameCount % spawnspd == 0) {
     createBasics();
+  }
+  if(frameCount % (spawnspd * 3) == 0) {
+    createBloomShooters();
   }
   if(frameCount % miniSpawnspd == 0) {
     createMiniBosses();
@@ -138,14 +148,42 @@ void draw() {
     enemySpd *= 2;
     moveRate *= 2;
   }
+  if((bossActive == true ) && (frameCount > bossSpawnTime + bossSpawnDur)){
+    bossActive = false;
+    setup();
+  }
   drawEnemies();
   drawMiniBoss();
   updatePlayerBullets();
   updateEnemyBullets();
+  updateBloomBullets();
   updateMissiles();
   gameOver();
+  textSize(12);
+  fill(255);
+  text("Current hp: " + str(player.durability), size, size);
 }
 
+void grid() {
+    for(int outer = 0; outer < h; outer++){
+      for(int inner = 0; inner < w; inner++){
+        fill(#404274);
+        square( inner * size, outer * size, size);
+      }
+    }
+}
+
+void keyPressed() {
+  if(key == CODED) {
+    if(keyCode == UP) { dir = new PVector(0, -size); }
+    if(keyCode == DOWN) { dir = new PVector(0, size); }
+    if(keyCode == LEFT) { dir = new PVector(-size, 0); }
+    if(keyCode == RIGHT) { dir = new PVector(size, 0); }
+    if(keyCode == SHIFT) { dir = new PVector(0, 0); }
+    if(keyCode == CONTROL) { bossActive = true; spawnBoss(); }
+    if(keyCode == ENTER) { setup(); }
+  } 
+}
 
 void drawPlayer() {
   fill(#74FF83);
@@ -177,22 +215,38 @@ void updatePlayerBullets(){
     else{playerBullets.remove(i);}
   }
 } 
-
-void grid() {
-    for(int outer = 0; outer < h; outer++){
-      for(int inner = 0; inner < w; inner++){
-        fill(#FFFFFF);
-        square( inner * size, outer * size, size);
-      }
-    }
+void playerIsHit(){
+   player = new Player(size * 3, player.durability - 1, (int) pos.x, (int) pos.y);
 }
 
-void collisionCheck(){// hitboxes under development
+void gameOver(){
+ if (player.durability < 1){
+   fill(#030303);
+   rect(0, 0, 1080, 720);
+   textSize(128);
+   fill(255);
+   text("GAME OVER", width / 4,  height / 2);
+   textSize(64);
+   text("You survived " + survived + " frames" , width / 4,  height / 1.5);
+ }else{survived = frameCount;}
+}
+
+void collisionCheck(){
  for(int i = 0; i < playerBullets.size(); i++){
    for(int j = 0; j < enemyposList.size(); j++){
      if((abs(playerBullets.get(i).x - enemyposList.get(j).x) < enemyList.get(j).size) &&
      (abs(playerBullets.get(i).y - enemyposList.get(j).y) < enemyList.get(j).size * 3)){
        enemyList.set(j, enemyDamaged(enemyList.get(j)));
+       playerBullets.remove(i);
+       i = 0;
+     }
+   }
+ }
+ for(int i = 0; i < playerBullets.size(); i++){
+   for(int j = 0; j < bloomposList.size(); j++){
+     if((abs(playerBullets.get(i).x - bloomposList.get(j).x) < bloomList.get(j).size) &&
+     (abs(playerBullets.get(i).y - bloomposList.get(j).y) < bloomList.get(j).size * 3)){
+       bloomList.set(j, enemyDamaged(bloomList.get(j)));
        playerBullets.remove(i);
        i = 0;
      }
@@ -217,6 +271,15 @@ void collisionCheck(){// hitboxes under development
        gameOver();
      }
    }
+   for(int i = 0; i < bloomBullets.size() ; i++){
+     if((abs(bloomBullets.get(i).x - pos.x) < player.size / 2) &&
+     (abs(bloomBullets.get(i).y - pos.y) < player.size / 2)){
+       playerIsHit();
+       bloomBullets.remove(i);
+       i = 0;
+       gameOver();
+     }
+   }
    for(int i = 0; i < missiles.size() ; i++){
      if((abs(missiles.get(i).x - pos.x) < player.size / 2) &&
      (abs(missiles.get(i).y - pos.y) < player.size / 2)){
@@ -235,169 +298,12 @@ void collisionCheck(){// hitboxes under development
    }
  }
  
-void playerIsHit(){
-   player = new Player(size * 3, player.durability - 1, (int) pos.x, (int) pos.y);
-}
-
-void gameOver(){
- if (player.durability < 1){
-   fill(#030303);
-   rect(0, 0, 1080, 720);//dummy "Game Over"
- }
-}
-void keyPressed() {
-  if(key == CODED) {
-    if(keyCode == UP) { dir = new PVector(0, -size); }
-    if(keyCode == DOWN) { dir = new PVector(0, size); }
-    if(keyCode == LEFT) { dir = new PVector(-size, 0); }
-    if(keyCode == RIGHT) { dir = new PVector(size, 0); }
-    if(keyCode == SHIFT) { dir = new PVector(0, 0); }
-    if(keyCode == CONTROL) { bossActive = true; spawnBoss(); }
-  } 
-}
-
-//pure testing
-void createBasics(){
-  Enemy basic = new Enemy(size * 2, 5, "basicEnemy", 5, (int) random(width) / size * size, (int) random(height / 3) / size * size);
-  PVector basicEnemy = new PVector(basic.xcord, basic.ycord);
-  fill(#3F4067);
-  square(basicEnemy.x, basicEnemy.y, 40);
-  enemyList.add(basic);
-  enemyposList.add(basicEnemy);
-}
-
-void drawEnemies(){
- for(int i = 0; i < enemyposList.size(); i++){
-    fill(#3F4067);
-    square(enemyposList.get(i).x, enemyposList.get(i).y, enemyList.get(i).size);
+void timerCheckCrab(){
+  if((frameCount - bossSpawnTime) % (bossSpawnDur / w) == 0){
+    hpBarDecrease(); 
   }
 }
 
-
-void createBloomShooters(){
-  Enemy bloom = new Enemy(size * 2, 5, "bloomer", 5, (int) random(width) / size * size, (int) random(height / 3) / size * size);
-  PVector bloom = new PVector(basic.xcord, basic.ycord);
-  fill(#3F4067);
-  square(bloom.x, bloom.y, 40);
-  enemyList.add(bloom);
-  enemyposList.add(bloom);
-}
-
-
-void updateEnemies(){
-  for(int i = 0; i < enemyposList.size(); i++){
-    enemyposList.get(i).add(0.0, (float) enemyList.get(i).spd);
-    if (enemyList.get(i).durability < 1){
-          enemyList.remove(i);
-          enemyposList.remove(i);
-          i--;
-      }
-  }
-}
-
-void createEnemyBullet(){
-  for(int i = 0; i < enemyposList.size(); i++){
-     PVector enemyBullet = new PVector(enemyposList.get(i).x + 2 * size / 3, enemyposList.get(i).y);
-     enemyBullets.add(enemyBullet);
-     enemyBulletsdirs.add(new EnemyBullet().dir);
-     fill(#FA1414);
-     square(enemyBullet.x, enemyBullet.y, size); 
-  }
-}
-
-void updateEnemyBullets(){
-  for(int i = 0; i < enemyBullets.size(); i++){
-    if(enemyBullets.get(i).y < height){
-    enemyBullets.get(i).add(enemyBulletsdirs.get(i));
-    fill(#FA1414);
-    square(enemyBullets.get(i).x, enemyBullets.get(i).y, size);
-    }
-    else{enemyBullets.remove(i); enemyBulletsdirs.remove(i);}
-  }
-} 
-
-void createMiniBosses(){
-  Enemy Mini = new Enemy(size * 10, 11, "miniBoss", 1, (int) random(width / 3, width * 2 / 3) / size * size, (int) random(height / 3) / size * size);
-  PVector MiniBoss = new PVector(Mini.xcord, Mini.ycord);
-  fill(#3F4067);
-  square(MiniBoss.x, MiniBoss.y, Mini.size);
-  miniBossList.add(Mini);
-  miniBossposList.add(MiniBoss);
-}
-
-void drawMiniBoss(){
- for(int i = 0; i < miniBossposList.size(); i++){
-    fill(#20675E);
-    square(miniBossposList.get(i).x - size * 10 / 3, miniBossposList.get(i).y - size * 10 / 3, size * 10);
-  } 
-}
-
-void updateMinis(){
-  for(int i = 0; i < miniBossposList.size(); i++){
-    miniBossposList.get(i).add(0.0, (float) miniBossList.get(i).spd);
-    if (miniBossList.get(i).durability < 1){
-          miniBossList.remove(i);
-          miniBossposList.remove(i);
-          i--;
-      }
-  }
-} 
-
-
-void createMiniLaser(){
-  for(int i = 0; i < miniBossposList.size(); i++){
-     PVector laser = new PVector(miniBossposList.get(i).x + size, miniBossposList.get(i).y);
-     lasers.add(laser);
-     fill(#FA1414);
-     rect(laser.x, laser.y, size, height); 
-  }
-}
-
-void createMissiles(int loc){
-  for(int i = 0; i < miniBossposList.size(); i++){
-     PVector missileL = new PVector(miniBossposList.get(i).x + loc, miniBossposList.get(i).y);
-     PVector missileR = new PVector(miniBossposList.get(i).x - loc, miniBossposList.get(i).y);
-     missiles.add(missileL);
-     fill(#FA1414);
-     square(missileL.x, missileL.y, size);
-     stepCount.add(0);
-     missiles.add(missileR);
-     fill(#FA1414);
-     square(missileR.x, missileR.y, size);
-     stepCount.add(0);
-  }
-}
-
-void updateMissiles(){
-  for(int i = 0; i < missiles.size(); i++){
-    if(missiles.get(i).y < pos.y){
-      if(missiles.get(i).y < height){
-        if(missiles.get(i).x > pos.x){
-           missiles.get(i).add(-2.0, 2.0);
-        }
-        else{
-           missiles.get(i).add(2.0, 2.0);
-        }
-      }
-    }else if(missiles.get(i).x > pos.x){
-           missiles.get(i).add(-2.0, -2.0);
-        }else{missiles.get(i).add(2.0, -2.0);}
-   fill(#FA1414);
-   square(missiles.get(i).x, missiles.get(i).y, size);
-   fill(#FA1414);
-   circle(missiles.get(i).x, missiles.get(i).y, size);
-   stepCount.set(i, (stepCount.get(i) + 1));
-   if(stepCount.get(i) > 500){// limits the amount of missiles on-screen and attacking the player
-     stepCount.remove(i);
-     missiles.remove(i);
-     i--;
-   }
-  }
-} 
-
-Enemy enemyDamaged(Enemy object){
-   return new Enemy(object.size, object.durability - 1, object.type, object.spd, object.xcord, object.ycord);
-}
 
 void spawnBoss(){
   //boss spawn overrides the field
@@ -405,6 +311,8 @@ void spawnBoss(){
   enemyposList = new ArrayList<PVector>();
   enemyList = new ArrayList<Enemy>();
   enemyBullets = new ArrayList<PVector>();
+  bloomposList = new ArrayList<PVector>();
+  bloomList = new ArrayList<Enemy>();
   miniBossposList = new ArrayList<PVector>();
   miniBossList = new ArrayList<Enemy>();
   missiles = new ArrayList<PVector>();
@@ -415,6 +323,7 @@ void spawnBoss(){
   miniSpawnspd = 10000;
   beegBoss = theBigCrab;//the only boss for now
   bossLoc = new PVector(beegBoss.xcord, beegBoss.ycord);
+  bossSpawnTime = bossSpawnTime();
 }
 
 void drawBoss(){
@@ -513,73 +422,199 @@ void bigCrabPatternC(){//bullet spray from claws
    }
 }
 
-void bossHit(){
-   beegBoss = new Enemy(beegBoss.size, beegBoss.durability - 1, beegBoss.type, 5, beegBoss.xcord, beegBoss.ycord);
-}
-
 void hpBarDecrease(){
   bossHP.remove(bossHP.size() - 1);
 }
 
-void bossDead(){
-  if(beegBoss.durability < 1){
-    bossActive = false; 
+int bossSpawnTime(){
+  return frameCount;
+}
+
+void createBasics(){
+  Enemy basic = new Enemy(size * 2, 5, "basicEnemy", 5, (int) random(width) / size * size, (int) random(height / 3) / size * size);
+  PVector basicEnemy = new PVector(basic.xcord, basic.ycord);
+  fill(#3F4067);
+  square(basicEnemy.x, basicEnemy.y, 40);
+  enemyList.add(basic);
+  enemyposList.add(basicEnemy);
+}
+
+void drawEnemies(){
+ for(int i = 0; i < enemyposList.size(); i++){
+    fill(#745F40);
+    square(enemyposList.get(i).x, enemyposList.get(i).y, enemyList.get(i).size);
+  }
+  for(int i = 0; i < bloomposList.size(); i++){
+    fill(#58E57A);
+    square(bloomposList.get(i).x, bloomposList.get(i).y, bloomList.get(i).size);
   }
 }
 
-void collisionCheckCrab(){
- for(int i = 0; i < playerBullets.size(); i++){
-     if((playerBullets.get(i).x < 6 * width / 8) && (playerBullets.get(i).x > 6 * width / 8) &&
-     (abs(playerBullets.get(i).y - size * 9) < beegBoss.size)){
-       bossHit();
-       hpBarDecrease();
-       playerBullets.remove(i);
-       i--;
-     }
- }
-}
 
-void spawnPowerUp(){
-  PVector powerUp = new PVector((int) random(width / 3, width * 2 / 3) / size * size, (int) random(height / 3, height) / size * size);
-  powerUpSpawn = true;
-  int randomizer = (int) random(100);
-  if(randomizer < 33){
-    powerUps.add(powerUp);
-    powerUpType.add("speedUp");
-  }else if(randomizer < 66){
-    powerUps.add(powerUp);
-    powerUpType.add("timeSlow");
-  }else if(randomizer < 99){powerUps.add(powerUp); powerUpType.add("healing");}
+void createBloomShooters(){
+  Enemy bloom = new Enemy(size * 2, 5, "bloomer", 5, (int) random(width) / size * size, (int) random(height / 3) / size * size);
+  PVector bloomer = new PVector(bloom.xcord, bloom.ycord);
+  fill(#58E57A);
+  square(bloomer.x, bloomer.y, 40);
+  bloomList.add(bloom);
+  bloomposList.add(bloomer);
 }
 
 
 
-void drawPowerUp(){
-  for(int i = 0; i < powerUps.size(); i++){
-    fill(#FA975D);
-    square(powerUps.get(i).x - size, powerUps.get(i).y - size, size);
+
+void updateEnemies(){
+  for(int i = 0; i < enemyposList.size(); i++){
+    enemyposList.get(i).add(0.0, (float) enemyList.get(i).spd);
+    if (enemyList.get(i).durability < 1){
+          enemyList.remove(i);
+          enemyposList.remove(i);
+          i--;
+      }
+  }
+  for(int i = 0; i < bloomposList.size(); i++){
+    bloomposList.get(i).add(0.0, (float) bloomList.get(i).spd);
+    if (bloomList.get(i).durability < 1){
+          bloomList.remove(i);
+          bloomposList.remove(i);
+          i--;
+      }
   }
 }
 
-int getPowerUpStart(){
-   return frameCount;
+void createEnemyBullet(){
+  for(int i = 0; i < enemyposList.size(); i++){
+    if(enemyList.get(i).type.equals("basicEnemy")){
+       PVector enemyBullet = new PVector(enemyposList.get(i).x + 2 * size / 3, enemyposList.get(i).y);
+       enemyBullets.add(enemyBullet);
+       enemyBulletsdirs.add(new EnemyBullet().dir);
+    }   
+  }
 }
 
-void collisionCheckPowerUp(){
-    for(int i = 0; i < powerUps.size(); i++){
-      if((abs(pos.x - powerUps.get(i).x) < player.size) && (abs(pos.y - powerUps.get(i).y)) < player.size){
-        powerUps.remove(i);
-        if(powerUpType.get(i).equals("speedUp")){
-          spedUp = true;
+void createBulletBloom(){
+  for(int i = 0; i < bloomposList.size(); i++){
+    for(int j = 0; j < 4; j++){
+      PVector enemyBullet = new PVector(bloomposList.get(i).x + 2 * size / 3, bloomposList.get(i).y);
+      bloomBullets.add(enemyBullet);
+    }
+  }
+}
+
+void updateEnemyBullets(){
+  for(int i = 0; i < enemyBullets.size(); i++){
+    enemyBullets.get(i).add(enemyBulletsdirs.get(i));
+    fill(#FA1414);
+    square(enemyBullets.get(i).x, enemyBullets.get(i).y, size);
+  }
+} 
+
+void updateBloomBullets(){
+  for(int i = 0; i < bloomBullets.size(); i++){
+    if(i % 4 == 0){
+    bloomBullets.get(i).add(0, 2.5);
+    fill(#FA1414);
+    square(bloomBullets.get(i).x, bloomBullets.get(i).y, size);
+    }
+    else if(i % 3 == 0){
+    bloomBullets.get(i).add(0, -2.5);
+    fill(#FA1414);
+    square(bloomBullets.get(i).x, bloomBullets.get(i).y, size);
+    }
+    else if(i % 2 == 0){
+    bloomBullets.get(i).add(2.5, 0);
+    fill(#FA1414);
+    square(bloomBullets.get(i).x, bloomBullets.get(i).y, size);
+    }
+    else{
+    bloomBullets.get(i).add(-2.5, 0);
+    fill(#FA1414);
+    square(bloomBullets.get(i).x, bloomBullets.get(i).y, size);
+    }
+  }
+} 
+
+void createMiniBosses(){
+  Enemy Mini = new Enemy(size * 10, 11, "miniBoss", 1, (int) random(width / 3, width * 2 / 3) / size * size, (int) random(height / 3) / size * size);
+  PVector MiniBoss = new PVector(Mini.xcord, Mini.ycord);
+  fill(#3F4067);
+  square(MiniBoss.x, MiniBoss.y, Mini.size);
+  miniBossList.add(Mini);
+  miniBossposList.add(MiniBoss);
+}
+
+void drawMiniBoss(){
+ for(int i = 0; i < miniBossposList.size(); i++){
+    fill(#20675E);
+    square(miniBossposList.get(i).x - size * 10 / 3, miniBossposList.get(i).y - size * 10 / 3, size * 10);
+  } 
+}
+
+void updateMinis(){
+  for(int i = 0; i < miniBossposList.size(); i++){
+    miniBossposList.get(i).add(0.0, (float) miniBossList.get(i).spd);
+    if (miniBossList.get(i).durability < 1){
+          miniBossList.remove(i);
+          miniBossposList.remove(i);
+          i--;
+      }
+  }
+} 
+
+
+void createMiniLaser(){
+  for(int i = 0; i < miniBossposList.size(); i++){
+     PVector laser = new PVector(miniBossposList.get(i).x + size, miniBossposList.get(i).y);
+     lasers.add(laser);
+     fill(#FA1414);
+     rect(laser.x, laser.y, size, height); 
+  }
+}
+
+void createMissiles(int loc){
+  for(int i = 0; i < miniBossposList.size(); i++){
+     PVector missileL = new PVector(miniBossposList.get(i).x + loc, miniBossposList.get(i).y);
+     PVector missileR = new PVector(miniBossposList.get(i).x - loc, miniBossposList.get(i).y);
+     missiles.add(missileL);
+     fill(#FA1414);
+     square(missileL.x, missileL.y, size);
+     stepCount.add(0);
+     missiles.add(missileR);
+     fill(#FA1414);
+     square(missileR.x, missileR.y, size);
+     stepCount.add(0);
+  }
+}
+
+void updateMissiles(){
+  for(int i = 0; i < missiles.size(); i++){
+    if(missiles.get(i).y < pos.y){
+      if(missiles.get(i).y < height){
+        if(missiles.get(i).x > pos.x){
+           missiles.get(i).add(-2.0, 2.0);
         }
-        if(powerUpType.get(i).equals("timeSlow")){
-          timeSlow = true;
-        }
-        if(powerUpType.get(i).equals("healing")){
-          healed = true;
+        else{
+           missiles.get(i).add(2.0, 2.0);
         }
       }
-    } 
+    }else if(missiles.get(i).x > pos.x){
+           missiles.get(i).add(-2.0, -2.0);
+        }else{missiles.get(i).add(2.0, -2.0);}
+   fill(#FA1414);
+   square(missiles.get(i).x, missiles.get(i).y, size);
+   fill(#FA1414);
+   circle(missiles.get(i).x, missiles.get(i).y, size);
+   stepCount.set(i, (stepCount.get(i) + 1));
+   if(stepCount.get(i) > 500){// limits the amount of missiles on-screen and attacking the player
+     stepCount.remove(i);
+     missiles.remove(i);
+     i--;
+   }
+  }
+} 
+
+Enemy enemyDamaged(Enemy object){
+   return new Enemy(object.size, object.durability - 1, object.type, object.spd, object.xcord, object.ycord);
 }
 
 class entity {
@@ -650,27 +685,6 @@ class Enemy extends entity { // to set enemy stats
   }
 }
 
-
-/*class enemyType{ // to store enemy types and stats
-  public int size;// is actually the hitbox
-  public int durability;
-  public String type;
-  public double spd;
-  public int xcord;
-  public int ycord;
-  public enemyType(String enemytype) {
-    type = enemytype;
-    for (int i = 0; i < enemyList.length; i++) {
-      if (enemytype.equals(enemyList[i].type)) {
-        size = enemyList[i].size;
-        durability = enemyList[i].durability;
-        spd = enemyList[i].spd;
-      }
-    }
-  }
-} 
-*/
-
 class EnemyBullet{//this is more of a dir randomizer in practice
   PVector dir; 
   public EnemyBullet(){
@@ -680,4 +694,47 @@ class EnemyBullet{//this is more of a dir randomizer in practice
      dir = direction; 
   }
   
+}
+
+void spawnPowerUp(){
+  PVector powerUp = new PVector((int) random(width / 3, width * 2 / 3) / size * size, (int) random(height / 3, height) / size * size);
+  powerUpSpawn = true;
+  int randomizer = (int) random(100);
+  if(randomizer < 33){
+    powerUps.add(powerUp);
+    powerUpType.add("speedUp");
+  }else if(randomizer < 66){
+    powerUps.add(powerUp);
+    powerUpType.add("timeSlow");
+  }else if(randomizer < 99){powerUps.add(powerUp); powerUpType.add("healing");}
+}
+
+
+
+void drawPowerUp(){
+  for(int i = 0; i < powerUps.size(); i++){
+    fill(#FA975D);
+    square(powerUps.get(i).x - size, powerUps.get(i).y - size, size);
+  }
+}
+
+int getPowerUpStart(){
+   return frameCount;
+}
+
+void collisionCheckPowerUp(){
+    for(int i = 0; i < powerUps.size(); i++){
+      if((abs(pos.x - powerUps.get(i).x) < player.size) && (abs(pos.y - powerUps.get(i).y)) < player.size){
+        powerUps.remove(i);
+        if(powerUpType.get(i).equals("speedUp")){
+          spedUp = true;
+        }
+        if(powerUpType.get(i).equals("timeSlow")){
+          timeSlow = true;
+        }
+        if(powerUpType.get(i).equals("healing")){
+          healed = true;
+        }
+      }
+    } 
 }
